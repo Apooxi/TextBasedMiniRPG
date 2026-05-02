@@ -8,7 +8,8 @@ CREATE TABLE Characters (
     Name VARCHAR(100) NOT NULL,
     Health INT NOT NULL,
     Damage INT NOT NULL,
-    Mana INT NOT NULL
+    Mana INT NOT NULL,
+    Wins INT DEFAULT 0
 );
 
 -- Örnek karakterlerimizi ekliyoruz.

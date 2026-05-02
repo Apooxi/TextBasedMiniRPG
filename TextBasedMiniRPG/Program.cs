@@ -124,10 +124,24 @@ namespace TextBasedMiniRPG
             if (Player1.Health <= 0)
             {
                 Console.WriteLine($"Kazanan {Player2.Name} oldu!");
+                using (NpgsqlConnection conn = new NpgsqlConnection(connString))
+                {
+                    conn.Open();
+                    string sqlQuery = $"UPDATE Characters SET Wins = Wins + 1 WHERE Name = '{Player2.Name}'";
+                    using (NpgsqlCommand cmd = new NpgsqlCommand(sqlQuery, conn))
+                        cmd.ExecuteNonQuery();
+                }
             }
             else
             {
                 Console.WriteLine($"Kazanan {Player1.Name} oldu!");
+                using (NpgsqlConnection conn = new NpgsqlConnection(connString))
+                {
+                    conn.Open();
+                    string sqlQuery = $"UPDATE Characters SET Wins = Wins + 1 WHERE Name = '{Player1.Name}'";
+                    using (NpgsqlCommand cmd = new NpgsqlCommand(sqlQuery, conn))
+                        cmd.ExecuteNonQuery();
+                }
             }
 
             Console.ReadLine();
@@ -259,7 +273,7 @@ namespace TextBasedMiniRPG
         
         public override void Attack(Character hedef)
         {
-            Console.WriteLine($"Savaşçı {Name} kılıcı ile saldırdı!");
+            Console.WriteLine($"{Name} kılıcı ile saldırdı!");
             hedef.TakeDamage(Damage);
         }
 
@@ -269,8 +283,7 @@ namespace TextBasedMiniRPG
             {
                 hedef.TakeDamage(2 * Damage);
                 Mana -= 20;
-                Console.WriteLine($"Savaşçı {Name} {hedef.Name}'e kılıcı ile ağır saldırı gerçekleştirdi ve {2*Damage} vurdu!");
-                Console.WriteLine($"Büyücü {hedef.Name}'in Canı: {hedef.Health}");
+                Console.WriteLine($"{Name} {hedef.Name}'e kılıcı ile ağır saldırı gerçekleştirdi ve {2*Damage} vurdu!");
             }
             else
             {
@@ -297,12 +310,12 @@ namespace TextBasedMiniRPG
             if (number == 3)
             {
                 hedef.TakeDamage(2 * Damage);
-                Console.WriteLine($"Büyücü {Name} kritik ateş topu fırlattı.");
+                Console.WriteLine($"{Name} kritik ateş topu fırlattı.");
             }
             else
             {
                 hedef.TakeDamage(Damage);
-                Console.WriteLine($"Büyücü {Name} ateş topu fırlattı.");
+                Console.WriteLine($"{Name} ateş topu fırlattı.");
             }
         }
 
@@ -312,7 +325,7 @@ namespace TextBasedMiniRPG
             {
                 Health += 30;
                 Mana -= 30;
-                Console.WriteLine($"Büyücü {Name} canını 30 artırdı! (Güncel Canı: {Health}, Kalan Mana: {Mana})");
+                Console.WriteLine($"{Name} canını 30 artırdı! (Güncel Canı: {Health}, Kalan Mana: {Mana})");
             }
             else
             {
