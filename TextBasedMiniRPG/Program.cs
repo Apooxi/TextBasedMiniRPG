@@ -94,8 +94,8 @@ namespace TextBasedMiniRPG
             int player2Choice = Convert.ToInt32(Console.ReadLine()) - 1;
             Character Player2 = roster[player2Choice];
 
-            Armor celikzirh = new Armor("Çelik Zırh", 5);
-            Armor gucluCelikzirh = new Armor("Güçlü Çelik Zırh", 15);
+            Armor celikzirh = new Armor("Çelik Zırh", 5, 10);
+            Armor gucluCelikzirh = new Armor("Güçlü Çelik Zırh", 15, 5);
             Player1.EquippedArmor = gucluCelikzirh;
             Player2.EquippedArmor = celikzirh;
 
@@ -315,13 +315,33 @@ namespace TextBasedMiniRPG
         public virtual void TakeDamage(int incomingDamage)
         {
             int netDamage = incomingDamage;
-            if(EquippedArmor != null)
+
+            if (EquippedArmor != null)
             {
-                netDamage -= EquippedArmor.Defense;
-                Console.WriteLine($"[Sistem] {EquippedArmor.Name} zırhı hasarın {EquippedArmor.Defense} kadarını emdi!");
+                int absorbedDamage;
+
+                if (incomingDamage < EquippedArmor.Defense)
+                {
+                    absorbedDamage = incomingDamage;
+                }
+                else
+                {
+                    absorbedDamage = EquippedArmor.Defense;
+                }
+
+                EquippedArmor.Durability -= absorbedDamage;
+                Console.WriteLine($"[Sistem] {EquippedArmor.Name} zırhı hasarın {absorbedDamage} kadarını emdi! (Zırhın Kalan Canı: {EquippedArmor.Durability})");
+
+                netDamage -= absorbedDamage;
+
+                if (EquippedArmor.Durability <= 0)
+                {
+                    Console.WriteLine($"\nÇAAAAT! {Name} üzerindeki {EquippedArmor.Name} paramparça oldu!\n");
+                    EquippedArmor = null;
+                }
             }
 
-            if(netDamage < 0)
+            if (netDamage < 0)
             {
                 netDamage = 0;
             }
@@ -414,6 +434,7 @@ namespace TextBasedMiniRPG
     {
         private string name;
         private int defense;
+        private int durability;
         public string Name
         {
             set
@@ -446,10 +467,27 @@ namespace TextBasedMiniRPG
             get { return defense; }
         }
 
-        public Armor(string name, int defense)
+        public int Durability
+        {
+            set
+            {
+                if(value < 0)
+                {
+                    Console.WriteLine("Dayanıklılık sıfırın altında olamaz.");
+                }
+                else
+                {
+                    durability = value;
+                }
+            }
+            get { return  durability; }
+        }
+
+        public Armor(string name, int defense, int durability)
         {
             Name = name;
             Defense = defense;
+            Durability = durability;
         }
     }
 }
