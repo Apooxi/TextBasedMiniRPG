@@ -14,6 +14,11 @@ namespace TextBasedMiniRPG
 
             Character Arthur = new Warrior("Arthur",100, 15, 70);
             Character Merlin = new Wizard("Merlin", 80, 20, 80);
+            Armor celikzırh = new Armor("Çelik Zırh", 5);
+            Armor gucluCelikzırh = new Armor("Güçlü Çelik Zırh", 15);
+
+            Arthur.EquippedArmor = gucluCelikzırh;
+            Merlin.EquippedArmor = celikzırh;
 
             Console.WriteLine("=== ARENAYA HOŞGELDİNİZ ===");
 
@@ -84,6 +89,7 @@ namespace TextBasedMiniRPG
         private int health;
         private int damage;
         private int mana;
+        public Armor EquippedArmor { get; set; } //Kapsülleme kısayolu artı olarak bir nesnenin başka bir nesneye sahip olması (Has-A) ilişkisi
 
         public string Name
         {
@@ -166,6 +172,25 @@ namespace TextBasedMiniRPG
         public abstract void Attack(Character hedef); //hedef nesnesini parametre olarak alıyor
         public abstract void SpecialSkill(Character hedef);
 
+        public virtual void TakeDamage(int incomingDamage)
+        {
+            int netDamage = incomingDamage;
+            if(EquippedArmor != null)
+            {
+                netDamage -= EquippedArmor.Defense;
+                Console.WriteLine($"[Sistem] {EquippedArmor.Name} zırhı hasarın {EquippedArmor.Defense} kadarını emdi!");
+            }
+
+            if(netDamage < 0)
+            {
+                netDamage = 0;
+            }
+
+            Health -= netDamage;
+
+            Console.WriteLine($"[Sistem] {Name} {netDamage} net hasar aldı! (Kalan Can: {Health})");
+        }
+
         public void showInfo()
         {
             Console.WriteLine($"İsim: {Name}, Can: {Health}");
@@ -179,18 +204,19 @@ namespace TextBasedMiniRPG
         {
 
         }
+
+        
         public override void Attack(Character hedef)
         {
-            hedef.Health -= Damage; //Hedefin canını warrior'ın damage'ı kadar düşürdük.
-            Console.WriteLine($"Savaşçı {Name} {hedef.Name}'e kılıcı ile saldırdı ve {Damage} vurdu!");
-            Console.WriteLine($"Büyücü {hedef.Name}'in Canı: {hedef.Health}");
+            Console.WriteLine($"Savaşçı {Name} kılıcı ile saldırdı!");
+            hedef.TakeDamage(Damage);
         }
 
         public override void SpecialSkill(Character hedef)
         {
             if(Mana >=20) //Ağır darbe 20 mana olarak belirledik
             {
-                hedef.Health -= 2 * Damage;
+                hedef.TakeDamage(2 * Damage);
                 Mana -= 20;
                 Console.WriteLine($"Savaşçı {Name} {hedef.Name}'e kılıcı ile ağır saldırı gerçekleştirdi ve {2*Damage} vurdu!");
                 Console.WriteLine($"Büyücü {hedef.Name}'in Canı: {hedef.Health}");
@@ -219,15 +245,13 @@ namespace TextBasedMiniRPG
 
             if (number == 3)
             {
-                hedef.Health -= 2 * Damage;
+                hedef.TakeDamage(2 * Damage);
                 Console.WriteLine($"Büyücü {Name} kritik ateş topu fırlattı.");
-                Console.WriteLine($"Savaşçı {hedef.Name}'in Canı: {hedef.Health}");
             }
             else
             {
-                hedef.Health -= Damage;
+                hedef.TakeDamage(Damage);
                 Console.WriteLine($"Büyücü {Name} ateş topu fırlattı.");
-                Console.WriteLine($"Savaşçı {hedef.Name}'in Canı: {hedef.Health}");
             }
         }
 
@@ -245,6 +269,49 @@ namespace TextBasedMiniRPG
                 Attack(hedef);
             }
 
+        }
+    }
+
+    class Armor
+    {
+        private string name;
+        private int defense;
+        public string Name
+        {
+            set
+            {
+                if(!string.IsNullOrEmpty(value))
+                {
+                    name = value;
+                }
+                else
+                {
+                    Console.WriteLine("İsim boş geçilemez.");
+                }
+            }
+            get { return name; }
+        }
+
+        public int Defense
+        {
+            set
+            {
+                if(value < 0)
+                {
+                    Console.WriteLine("Defans gücü negatif olamaz.");
+                }
+                else
+                {
+                    defense = value;
+                }
+            }
+            get { return defense; }
+        }
+
+        public Armor(string name, int defense)
+        {
+            Name = name;
+            Defense = defense;
         }
     }
 }
