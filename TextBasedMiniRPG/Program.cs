@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Npgsql;
 
 namespace TextBasedMiniRPG
 {
@@ -12,20 +13,70 @@ namespace TextBasedMiniRPG
         {
             Random random = new Random();
 
-            Character Arthur = new Warrior("Arthur",100, 15, 70);
-            Character Merlin = new Wizard("Merlin", 80, 20, 80);
-            Armor celikzırh = new Armor("Çelik Zırh", 5);
-            Armor gucluCelikzırh = new Armor("Güçlü Çelik Zırh", 15);
+            List<Character> roster = new List<Character>();
 
-            Arthur.EquippedArmor = gucluCelikzırh;
-            Merlin.EquippedArmor = celikzırh;
+            string connString = "Host=localhost;Username=postgres;Password=admin;Database=ArenaDB";
+
+            using (NpgsqlConnection conn = new NpgsqlConnection(connString))
+            {
+                conn.Open();
+                string sqlQuery = "SELECT Id, CharacterType, Name, Health, Damage, Mana FROM Characters";
+                using (NpgsqlCommand cmd = new NpgsqlCommand(sqlQuery, conn))
+                using (NpgsqlDataReader reader = cmd.ExecuteReader())
+                {
+                    Console.WriteLine("=== ARENA DÖVÜŞÇÜ LİSTESİ ===");
+                    int index = 1;
+
+                    while (reader.Read())
+                    {
+                        string type = reader["CharacterType"].ToString();
+                        string name = reader["Name"].ToString();
+                        int hp = Convert.ToInt32(reader["Health"]);
+                        int dmg = Convert.ToInt32(reader["Damage"]);
+                        int mana = Convert.ToInt32(reader["Mana"]);
+
+                        Character newChar;
+                        if (type == "Warrior")
+                        {
+                            newChar = new Warrior(name, hp, dmg, mana);
+                        }
+                        else
+                        {
+                            newChar = new Wizard(name, hp, dmg, mana);
+                        }
+
+                        roster.Add(newChar);
+
+                        Console.WriteLine($"{index}. {name} ({type}) -> Can: {hp}, Hasar: {dmg}, Mana: {mana}");
+                        index++;
+                    }
+                }
+
+            }
+
+            Console.WriteLine("=============================");
+            Console.Write("Kendi karakterini seç (1 - 5): ");
+            int player1Choice = Convert.ToInt32(Console.ReadLine()) - 1;
+            Character Player1 = roster[player1Choice];
+
+            Console.Write("Rakibini seç (1 - 5): ");
+            int player2Choice = Convert.ToInt32(Console.ReadLine()) - 1;
+            Character Player2 = roster[player2Choice];
+
+            Armor celikzirh = new Armor("Çelik Zırh", 5);
+            Armor gucluCelikzirh = new Armor("Güçlü Çelik Zırh", 15);
+            Player1.EquippedArmor = gucluCelikzirh;
+            Player2.EquippedArmor = celikzirh;
+
+            Console.WriteLine($"\nSAVAŞ BAŞLIYOR: {Player1.Name} vs {Player2.Name}!");
+            Console.ReadLine();
 
             Console.WriteLine("=== ARENAYA HOŞGELDİNİZ ===");
 
-            while(Arthur.Health > 0 && Merlin.Health > 0)
+            while(Player1.Health > 0 && Player2.Health > 0)
             {
                 Console.WriteLine("\n--------------------------------");
-                Console.WriteLine($"Sıra {Arthur.Name}'da! (Can: {Arthur.Health}, Mana: {Arthur.Mana})");
+                Console.WriteLine($"Sıra {Player1.Name}'da! (Can: {Player1.Health}, Mana: {Player1.Mana})");
                 Console.WriteLine("1 - Normal Saldırı");
                 Console.WriteLine("2 - Özel Yetenek");
                 Console.Write("Seçiminiz: ");
@@ -33,50 +84,50 @@ namespace TextBasedMiniRPG
 
                 if(userChoice == "1")
                 {
-                    Arthur.Attack(Merlin);
+                    Player1.Attack(Player2);
                 }
                 else if(userChoice == "2")
                 {
-                    Arthur.SpecialSkill(Merlin);
+                    Player1.SpecialSkill(Player2);
                 }
                 else
                 {
                     Console.WriteLine("Yanlış tuşa bastın, elin ayağına dolaştı ve hamle sıranı kaybettin!");
                 }
 
-                if (Merlin.Health <= 0) break;
+                if (Player2.Health <= 0) break;
 
                 Console.WriteLine("\nDevam etmek için Enter'a bas...");
                 Console.ReadLine();
 
                 Console.WriteLine("--------------------------------");
-                Console.WriteLine($"Sıra {Merlin.Name}'de! (Can: {Merlin.Health}, Mana: {Merlin.Mana})");
+                Console.WriteLine($"Sıra {Player2.Name}'de! (Can: {Player2.Health}, Mana: {Player2.Mana})");
 
-                int merlinChoice = random.Next(1, 3);
+                int Player2Choice = random.Next(1, 3);
 
-                if(merlinChoice == 1)
+                if(Player2Choice == 1)
                 {
-                    Merlin.Attack(Arthur);
+                    Player2.Attack(Player1);
                 }
                 else
                 {
-                    Merlin.SpecialSkill(Arthur);
+                    Player2.SpecialSkill(Player1);
                 }
 
-                if (Arthur.Health <= 0) break;
+                if (Player1.Health <= 0) break;
 
                 Console.WriteLine("\nYeni tura geçmek için Enter'a bas...");
                 Console.ReadLine();
             }
 
             Console.WriteLine("\n=== SAVAŞ BİTTİ ===");
-            if (Arthur.Health <= 0)
+            if (Player1.Health <= 0)
             {
-                Console.WriteLine($"Kazanan {Merlin.Name} oldu!");
+                Console.WriteLine($"Kazanan {Player2.Name} oldu!");
             }
             else
             {
-                Console.WriteLine($"Kazanan {Arthur.Name} oldu!");
+                Console.WriteLine($"Kazanan {Player1.Name} oldu!");
             }
 
             Console.ReadLine();
@@ -261,7 +312,6 @@ namespace TextBasedMiniRPG
             {
                 Health += 30;
                 Mana -= 30;
-                Console.WriteLine($"Büyücü {Name} canını 30 artırdı!");
                 Console.WriteLine($"Büyücü {Name} canını 30 artırdı! (Güncel Canı: {Health}, Kalan Mana: {Mana})");
             }
             else
