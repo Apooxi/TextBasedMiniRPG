@@ -11,11 +11,42 @@ namespace TextBasedMiniRPG
     {
         static void Main(string[] args)
         {
+
+            string connString = "Host=localhost;Username=postgres;Password=admin;Database=ArenaDB";
+
+            Console.WriteLine("Ne yapmak istersin?");
+            Console.WriteLine("1 - Arenaya Git");
+            Console.WriteLine("2 - Yeni Karakter Yarat");
+            string userChoice = Console.ReadLine();
+
+            if(userChoice == "2")
+            {
+                
+                Console.WriteLine("Karakterin sınıfı ne olsun?");
+                Console.WriteLine("Warrior, Wizard");
+                string characterType = checkStringInput(Console.ReadLine());
+                Console.Write("Karakterin adı: ");
+                string characterName = checkStringInput(Console.ReadLine());
+                Console.Write("Karakterin can değerini gir: ");
+                int characterHealth = checkIntInput(Console.ReadLine());
+                Console.Write("Karakterin hasar değeri kaç olsun: ");
+                int characterDamage = checkIntInput(Console.ReadLine());
+                Console.Write("Karakterin kaç manası olsun: ");
+                int characterMana = checkIntInput(Console.ReadLine());
+
+                using (NpgsqlConnection conn = new NpgsqlConnection(connString))
+                {
+                    conn.Open();
+                    string sqlQuery = $"INSERT INTO Characters (CharacterType, Name, Health, Damage, Mana, Wins) VALUES ('{characterType}', '{characterName}', {characterHealth}, {characterDamage}, {characterMana}, 0)";
+
+                    using (NpgsqlCommand cmd = new NpgsqlCommand(sqlQuery, conn))
+                        cmd.ExecuteNonQuery();
+                }
+            }
+
             Random random = new Random();
 
             List<Character> roster = new List<Character>();
-
-            string connString = "Host=localhost;Username=postgres;Password=admin;Database=ArenaDB";
 
             using (NpgsqlConnection conn = new NpgsqlConnection(connString))
             {
@@ -80,13 +111,13 @@ namespace TextBasedMiniRPG
                 Console.WriteLine("1 - Normal Saldırı");
                 Console.WriteLine("2 - Özel Yetenek");
                 Console.Write("Seçiminiz: ");
-                string userChoice = Console.ReadLine();
+                string playerChoice = Console.ReadLine();
 
-                if(userChoice == "1")
+                if(playerChoice == "1")
                 {
                     Player1.Attack(Player2);
                 }
-                else if(userChoice == "2")
+                else if(playerChoice == "2")
                 {
                     Player1.SpecialSkill(Player2);
                 }
@@ -145,6 +176,50 @@ namespace TextBasedMiniRPG
             }
 
             Console.ReadLine();
+        }
+
+        public static string checkStringInput(string userInput)
+        {
+            string result;
+            while(true)
+            {
+                if (!string.IsNullOrEmpty(userInput))
+                {
+                    result =  userInput;
+                    break;
+                }
+                else
+                {
+                    Console.WriteLine("İsim boş olamaz!");
+                    Console.WriteLine("Tekrar girin");
+                    userInput = Console.ReadLine();
+                }
+            }
+            return result;
+            
+        }
+
+        public static int checkIntInput(string userInput)
+        {
+            int number;
+
+            while (true)
+            {
+                
+                bool result = int.TryParse(userInput, out number);
+
+                if (result && !(number < 0))
+                {
+                    return number;
+                }
+                else 
+                {
+                    Console.WriteLine("Hatalı giriş! Lütfen geçerli ve sıfırdan büyük bir sayı girin.");
+                    Console.WriteLine("Tekrar girin.");
+                    userInput = Console.ReadLine();
+                }
+                
+            }
         }
     }
 
