@@ -11,6 +11,7 @@ namespace TextBasedMiniRPG
     {
         static void Main(string[] args)
         {
+            DatabaseManager dbManager = new DatabaseManager();
 
             string connString = "Host=localhost;Username=postgres;Password=admin;Database=ArenaDB";
 
@@ -34,56 +35,23 @@ namespace TextBasedMiniRPG
                 Console.Write("Karakterin kaç manası olsun: ");
                 int characterMana = checkIntInput(Console.ReadLine());
 
-                using (NpgsqlConnection conn = new NpgsqlConnection(connString))
-                {
-                    conn.Open();
-                    string sqlQuery = $"INSERT INTO Characters (CharacterType, Name, Health, Damage, Mana, Wins) VALUES ('{characterType}', '{characterName}', {characterHealth}, {characterDamage}, {characterMana}, 0)";
+                dbManager.AddCharacter(characterType, characterName, characterHealth, characterDamage, characterMana);
 
-                    using (NpgsqlCommand cmd = new NpgsqlCommand(sqlQuery, conn))
-                        cmd.ExecuteNonQuery();
-                }
             }
 
             Random random = new Random();
 
-            List<Character> roster = new List<Character>();
+            List<Character> roster = dbManager.GetAllCharacters();
 
-            using (NpgsqlConnection conn = new NpgsqlConnection(connString))
+            Console.WriteLine("=== ARENA DÖVÜŞÇÜ LİSTESİ ===");
+            int index = 1;
+            foreach (var fighter in roster)
             {
-                conn.Open();
-                string sqlQuery = "SELECT Id, CharacterType, Name, Health, Damage, Mana FROM Characters";
-                using (NpgsqlCommand cmd = new NpgsqlCommand(sqlQuery, conn))
-                using (NpgsqlDataReader reader = cmd.ExecuteReader())
-                {
-                    Console.WriteLine("=== ARENA DÖVÜŞÇÜ LİSTESİ ===");
-                    int index = 1;
-
-                    while (reader.Read())
-                    {
-                        string type = reader["CharacterType"].ToString();
-                        string name = reader["Name"].ToString();
-                        int hp = Convert.ToInt32(reader["Health"]);
-                        int dmg = Convert.ToInt32(reader["Damage"]);
-                        int mana = Convert.ToInt32(reader["Mana"]);
-
-                        Character newChar;
-                        if (type == "Warrior")
-                        {
-                            newChar = new Warrior(name, hp, dmg, mana);
-                        }
-                        else
-                        {
-                            newChar = new Wizard(name, hp, dmg, mana);
-                        }
-
-                        roster.Add(newChar);
-
-                        Console.WriteLine($"{index}. {name} ({type}) -> Can: {hp}, Hasar: {dmg}, Mana: {mana}");
-                        index++;
-                    }
-                }
-
+                Console.WriteLine($"{index}. {fighter.Name} ({fighter.GetType().Name}) -> Can: {fighter.Health}, Hasar: {fighter.Damage}, Mana: {fighter.Mana}");
+                index++;
             }
+
+
 
             Console.WriteLine("=============================");
             Console.Write("Kendi karakterini seç (1 - 5): ");
@@ -155,24 +123,12 @@ namespace TextBasedMiniRPG
             if (Player1.Health <= 0)
             {
                 Console.WriteLine($"Kazanan {Player2.Name} oldu!");
-                using (NpgsqlConnection conn = new NpgsqlConnection(connString))
-                {
-                    conn.Open();
-                    string sqlQuery = $"UPDATE Characters SET Wins = Wins + 1 WHERE Name = '{Player2.Name}'";
-                    using (NpgsqlCommand cmd = new NpgsqlCommand(sqlQuery, conn))
-                        cmd.ExecuteNonQuery();
-                }
+                dbManager.AddWinToCharacters(Player2.Name);
             }
             else
             {
                 Console.WriteLine($"Kazanan {Player1.Name} oldu!");
-                using (NpgsqlConnection conn = new NpgsqlConnection(connString))
-                {
-                    conn.Open();
-                    string sqlQuery = $"UPDATE Characters SET Wins = Wins + 1 WHERE Name = '{Player1.Name}'";
-                    using (NpgsqlCommand cmd = new NpgsqlCommand(sqlQuery, conn))
-                        cmd.ExecuteNonQuery();
-                }
+                dbManager.AddWinToCharacters(Player1.Name);
             }
 
             Console.ReadLine();
