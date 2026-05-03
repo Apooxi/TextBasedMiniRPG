@@ -63,6 +63,10 @@ namespace TextBasedMiniRPG
 
             Armor celikzirh = new Armor("Çelik Zırh", 5, 10);
             Armor gucluCelikzirh = new Armor("Güçlü Çelik Zırh", 15, 5);
+
+            HealthPotion redPotion = new HealthPotion(30);
+            Player1.Inventory.Add(redPotion);
+
             Player1.EquippedArmor = gucluCelikzirh;
             Player2.EquippedArmor = celikzirh;
 
@@ -77,6 +81,7 @@ namespace TextBasedMiniRPG
                 Console.WriteLine($"Sıra {Player1.Name}'da! (Can: {Player1.Health}, Mana: {Player1.Mana})");
                 Console.WriteLine("1 - Normal Saldırı");
                 Console.WriteLine("2 - Özel Yetenek");
+                Console.WriteLine("3 - Eşya Kullan");
                 Console.Write("Seçiminiz: ");
                 string playerChoice = Console.ReadLine();
 
@@ -87,6 +92,19 @@ namespace TextBasedMiniRPG
                 else if(playerChoice == "2")
                 {
                     Player1.SpecialSkill(Player2);
+                }
+                else if (playerChoice == "3")
+                {
+                    if(Player1.Inventory.Count <= 0)
+                    {
+                        Console.WriteLine("Çantan boş!");
+                    }
+                    else
+                    {
+                        IUsable selectedItem = Player1.Inventory[0];
+                        selectedItem.Use(Player1);
+                        Player1.Inventory.Remove(selectedItem);
+                    }
                 }
                 else
                 {
@@ -190,6 +208,9 @@ namespace TextBasedMiniRPG
         private int mana;
         private int level;
         private int xp;
+        private List<IUsable> inventory;
+
+        public List<IUsable> Inventory { get; private set; } = new List<IUsable>();
         public Armor EquippedArmor { get; set; } //Kapsülleme kısayolu artı olarak bir nesnenin başka bir nesneye sahip olması (Has-A) ilişkisi
 
         public string Name
@@ -509,6 +530,43 @@ namespace TextBasedMiniRPG
             Defense = defense;
             Durability = durability;
         }
+    }
+
+    class HealthPotion : IUsable
+    {
+        private int healAmount;
+        public int HealAmount
+        {
+            set
+            {
+                if(value < 0)
+                {
+                    healAmount = 0;
+                }
+                else
+                {
+                    healAmount = value;
+                }
+            }
+            get { return healAmount; }
+        }
+
+        public HealthPotion(int healAmount)
+        {
+            HealAmount = healAmount;
+        }
+
+        public void Use(Character target)
+        {
+            target.Health += HealAmount;
+            Console.WriteLine($"[Sistem] İksir içildi can {HealAmount} kadar yenilendi. {target.Name} yeni sağlık değeri: {target.Health})");
+
+        }
+    }
+
+    interface IUsable
+    {
+        void Use(Character target);
     }
 }
 
