@@ -13,7 +13,6 @@ namespace TextBasedMiniRPG
         {
             DatabaseManager dbManager = new DatabaseManager();
 
-            string connString = "Host=localhost;Username=postgres;Password=admin;Database=ArenaDB";
 
             Console.WriteLine("Ne yapmak istersin?");
             Console.WriteLine("1 - Arenaya Git");
@@ -47,7 +46,7 @@ namespace TextBasedMiniRPG
             int index = 1;
             foreach (var fighter in roster)
             {
-                Console.WriteLine($"{index}. {fighter.Name} ({fighter.GetType().Name}) -> Can: {fighter.Health}, Hasar: {fighter.Damage}, Mana: {fighter.Mana}");
+                Console.WriteLine($"{index}. {fighter.Name} ({fighter.GetType().Name}) -> Can: {fighter.Health}, Hasar: {fighter.Damage}, Mana: {fighter.Mana}, Level: {fighter.Level}, XP: {fighter.Xp}");
                 index++;
             }
 
@@ -123,11 +122,15 @@ namespace TextBasedMiniRPG
             if (Player1.Health <= 0)
             {
                 Console.WriteLine($"Kazanan {Player2.Name} oldu!");
+                Player2.GainXP(50); //Kazanana 50 xp verildiğini varsaydık
+                dbManager.UpdateCharacterStats(Player2);
                 dbManager.AddWinToCharacters(Player2.Name);
             }
             else
             {
                 Console.WriteLine($"Kazanan {Player1.Name} oldu!");
+                Player1.GainXP(50);
+                dbManager.UpdateCharacterStats(Player1);
                 dbManager.AddWinToCharacters(Player1.Name);
             }
 
@@ -185,6 +188,8 @@ namespace TextBasedMiniRPG
         private int health;
         private int damage;
         private int mana;
+        private int level;
+        private int xp;
         public Armor EquippedArmor { get; set; } //Kapsülleme kısayolu artı olarak bir nesnenin başka bir nesneye sahip olması (Has-A) ilişkisi
 
         public string Name
@@ -257,6 +262,38 @@ namespace TextBasedMiniRPG
             get { return mana; }
         }
 
+        public int Xp
+        {
+            set
+            {
+                if(value < 0)
+                {
+                    Console.WriteLine("XP sıfırın altında olamaz.");
+                }
+                else
+                {
+                    xp = value;
+                }
+            }
+            get { return xp; }
+        }
+
+        public int Level
+        {
+            set
+            {
+                if(value < 0)
+                {
+                    Console.WriteLine("Level sıfırn altında olamaz.");
+                }
+                else
+                {
+                    level = value;
+                }
+            }
+            get { return level; }
+        }
+
         public Character(string name, int health, int damage, int mana)
         {
             Name = name;
@@ -310,6 +347,33 @@ namespace TextBasedMiniRPG
         public void showInfo()
         {
             Console.WriteLine($"İsim: {Name}, Can: {Health}");
+        }
+
+        public void GainXP(int amount)
+        {
+            Xp += amount;
+            Console.WriteLine($"\n[Sistem] {Name} savaştan {amount} XP kazandı! (Toplam XP: {Xp})");
+
+            if (Xp >= 100)
+            {
+                LevelUp();
+            }
+        }
+
+        private void LevelUp()
+        {
+            Level++;
+            Xp -= 100;
+
+            Health += 20;
+            Damage += 5;
+            Mana += 15;
+
+            Console.WriteLine($"\n=======================================");
+            Console.WriteLine($"🌟 LEVEL UP! {Name} Seviye Atladı! 🌟");
+            Console.WriteLine($"Yeni Seviye: {Level}");
+            Console.WriteLine($"Yeni Statlar -> Can: {Health} | Hasar: {Damage} | Mana: {Mana}");
+            Console.WriteLine($"=======================================\n");
         }
     }
 
@@ -429,7 +493,7 @@ namespace TextBasedMiniRPG
             {
                 if(value < 0)
                 {
-                    Console.WriteLine("Dayanıklılık sıfırın altında olamaz.");
+                    durability = 0;
                 }
                 else
                 {

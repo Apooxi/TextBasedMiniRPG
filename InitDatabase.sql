@@ -9,7 +9,9 @@ CREATE TABLE Characters (
     Health INT NOT NULL,
     Damage INT NOT NULL,
     Mana INT NOT NULL,
-    Wins INT DEFAULT 0
+    Wins INT DEFAULT 0,
+    Level INT DEFAULT 1,
+    XP INT DEFAULT 0
 );
 
 -- Örnek karakterlerimizi ekliyoruz.
