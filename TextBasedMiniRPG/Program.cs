@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 using Npgsql;
 
 namespace TextBasedMiniRPG
@@ -46,7 +47,7 @@ namespace TextBasedMiniRPG
             int index = 1;
             foreach (var fighter in roster)
             {
-                Console.WriteLine($"{index}. {fighter.Name} ({fighter.GetType().Name}) -> Can: {fighter.Health}, Hasar: {fighter.Damage}, Mana: {fighter.Mana}, Level: {fighter.Level}, XP: {fighter.Xp}");
+                Console.WriteLine($"{index}. {fighter.Name} ({fighter.GetType().Name}) -> Can: {fighter.Health}, Hasar: {fighter.Damage}, Mana: {fighter.Mana}, Level: {fighter.Level}, XP: {fighter.Xp}, Gold: {fighter.Gold}");
                 index++;
             }
 
@@ -61,14 +62,48 @@ namespace TextBasedMiniRPG
             int player2Choice = Convert.ToInt32(Console.ReadLine()) - 1;
             Character Player2 = roster[player2Choice];
 
+            Shop cityShop = new Shop();
+
+            HealthPotion smallPotion = new HealthPotion(20, 10, "Küçük İksir");
+            HealthPotion bigPotion = new HealthPotion(50, 30, "Büyük İksir");
+
+            cityShop.AddProduct(smallPotion);
+            cityShop.AddProduct(bigPotion);
+
             Armor celikzirh = new Armor("Çelik Zırh", 5, 10);
             Armor gucluCelikzirh = new Armor("Güçlü Çelik Zırh", 15, 5);
 
-            HealthPotion redPotion = new HealthPotion(30);
-            Player1.Inventory.Add(redPotion);
+            
+            Player1.Inventory.Add(smallPotion);
 
             Player1.EquippedArmor = gucluCelikzirh;
             Player2.EquippedArmor = celikzirh;
+
+            Console.WriteLine("Savaş Başlamadan mağazaya girmek ister misiniz? (E/H)");
+            string shopChoice = Console.ReadLine().Trim().ToLower();
+            if(shopChoice == "e")
+            {
+                Console.WriteLine($"Karakterin bakiyesi {Player1.Gold}");
+                Console.WriteLine();
+                Console.WriteLine("Mağazaya hoşgeldiniz ürünler aşağıdadır almak istediğiniz ürünü seçin: ");
+                cityShop.ShowProducts();
+
+                bool result;
+                while (true)
+                {
+                    result = int.TryParse(Console.ReadLine(), out int itemChoice);
+
+                    if (result)
+                    {
+                        cityShop.BuyItem(Player1, itemChoice - 1);
+                        break;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Hatalı giriş yaptınız! Tekrar girin: "); 
+                    }
+                }
+            }
 
             Console.WriteLine($"\nSAVAŞ BAŞLIYOR: {Player1.Name} vs {Player2.Name}!");
             Console.ReadLine();
@@ -141,6 +176,7 @@ namespace TextBasedMiniRPG
             {
                 Console.WriteLine($"Kazanan {Player2.Name} oldu!");
                 Player2.GainXP(50); //Kazanana 50 xp verildiğini varsaydık
+                Player2.GainGold(30); //Kazanana 30 altın verildiğini varsaydık
                 dbManager.UpdateCharacterStats(Player2);
                 dbManager.AddWinToCharacters(Player2.Name);
             }
@@ -148,6 +184,7 @@ namespace TextBasedMiniRPG
             {
                 Console.WriteLine($"Kazanan {Player1.Name} oldu!");
                 Player1.GainXP(50);
+                Player1.GainGold(30);
                 dbManager.UpdateCharacterStats(Player1);
                 dbManager.AddWinToCharacters(Player1.Name);
             }
@@ -208,6 +245,7 @@ namespace TextBasedMiniRPG
         private int mana;
         private int level;
         private int xp;
+        private int gold;
         private List<IUsable> inventory;
 
         public List<IUsable> Inventory { get; private set; } = new List<IUsable>();
@@ -315,6 +353,22 @@ namespace TextBasedMiniRPG
             get { return level; }
         }
 
+        public int Gold
+        {
+            set
+            {
+                if(value < 0)
+                {
+                    gold = 0;
+                }
+                else
+                {
+                    gold = value;
+                }
+            }
+            get { return gold; }
+        }
+
         public Character(string name, int health, int damage, int mana)
         {
             Name = name;
@@ -378,6 +432,20 @@ namespace TextBasedMiniRPG
             if (Xp >= 100)
             {
                 LevelUp();
+            }
+        }
+
+        public void GainGold(int amount)
+        {
+            if(amount <= 0)
+            {
+                gold += 0;
+                Console.WriteLine("Negatif değer olamaz.");
+            }
+            else
+            {
+                gold += amount;
+                Console.WriteLine($"[Sistem] {Name} savaştan {amount} Altın kazandı! Güncel Bakiye: {gold}).");
             }
         }
 
@@ -532,7 +600,7 @@ namespace TextBasedMiniRPG
         }
     }
 
-    class HealthPotion : IUsable
+    class HealthPotion : IUsable, IPurchasable
     {
         private int healAmount;
         public int HealAmount
@@ -550,10 +618,14 @@ namespace TextBasedMiniRPG
             }
             get { return healAmount; }
         }
+        public int Price { get; set; }
+        public string Name { get; set; }
 
-        public HealthPotion(int healAmount)
+        public HealthPotion(int healAmount, int price, string name)
         {
             HealAmount = healAmount;
+            Price = price;
+            Name = name;
         }
 
         public void Use(Character target)
@@ -564,9 +636,56 @@ namespace TextBasedMiniRPG
         }
     }
 
+    class Shop
+    {
+        public List<IPurchasable> Stack { get; private set; } = new List<IPurchasable>();
+
+        public void AddProduct(IPurchasable item)
+        {
+            Stack.Add(item);
+        }
+
+        public void ShowProducts()
+        {
+            int index = 1;
+            foreach(IPurchasable item in Stack)
+            {
+                Console.WriteLine($"{index}. {item.Name} - Fiyat: {item.Price} Altın");
+                index++;
+            }
+        }
+
+        public void BuyItem(Character player, int index)
+        {
+            IPurchasable selectedItem = Stack[index];
+
+            if(player.Gold < selectedItem.Price)
+            {
+                Console.WriteLine("Bu eşyayı satın almak için yeterli altının yok.");
+            }
+            else
+            {
+                player.Gold -= selectedItem.Price;
+
+                if(selectedItem is IUsable usableIem)
+                {
+                    player.Inventory.Add(usableIem);
+                    Console.WriteLine($"[Sistem] {selectedItem.Name} satın alındı ve çantaya eklendi!");
+                }
+            }
+        }
+    }
+
     interface IUsable
     {
         void Use(Character target);
+    }
+
+    interface IPurchasable
+    {
+        int Price { get; set; }
+        string Name { get; set; }
+
     }
 }
 

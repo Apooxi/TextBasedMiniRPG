@@ -17,7 +17,7 @@ namespace TextBasedMiniRPG
             using (NpgsqlConnection conn = new NpgsqlConnection(connString))
             {
                 conn.Open();
-                string sqlQuery = $"INSERT INTO Characters (CharacterType, Name, Health, Damage, Mana, Wins) VALUES ('{type}', '{name}', {health}, {damage}, {mana}, 0)";
+                string sqlQuery = $"INSERT INTO Characters (CharacterType, Name, Health, Damage, Mana, Wins, Gold) VALUES ('{type}', '{name}', {health}, {damage}, {mana}, 0, 100)";
 
                 using (NpgsqlCommand cmd = new NpgsqlCommand(sqlQuery, conn))
                 {
@@ -34,7 +34,7 @@ namespace TextBasedMiniRPG
             using(NpgsqlConnection conn = new NpgsqlConnection( connString))
             {
                 conn.Open();
-                string sqlQuery = "SELECT Id, CharacterType, Name, Health, Damage, Mana, Level, XP FROM Characters";
+                string sqlQuery = "SELECT Id, CharacterType, Name, Health, Damage, Mana, Level, XP, Gold FROM Characters";
 
                 using(NpgsqlCommand cmd = new NpgsqlCommand(sqlQuery, conn))
                 using(NpgsqlDataReader reader = cmd.ExecuteReader())
@@ -48,6 +48,7 @@ namespace TextBasedMiniRPG
                         int mana = Convert.ToInt32(reader["Mana"]);
                         int level = Convert.ToInt32(reader["Level"]);
                         int xp = Convert.ToInt32(reader["XP"]);
+                        int gold = Convert.ToInt32(reader["Gold"]);
 
                         Character newChar;
                         if (type == "Warrior")
@@ -61,6 +62,7 @@ namespace TextBasedMiniRPG
 
                         newChar.Level = level;
                         newChar.Xp = xp;
+                        newChar.Gold = gold;
 
                         roster.Add(newChar);
                     }
@@ -88,7 +90,7 @@ namespace TextBasedMiniRPG
             using(NpgsqlConnection conn = new NpgsqlConnection(connString))
             {
                 conn.Open();
-                string sqlQuery = $"UPDATE Characters SET Level = {character.Level}, XP = {character.Xp}, Health = {character.Health}, Damage = {character.Damage}, Mana = {character.Mana} WHERE Name = '{character.Name}'";
+                string sqlQuery = $"UPDATE Characters SET Level = {character.Level}, XP = {character.Xp}, Health = {character.Health}, Damage = {character.Damage}, Mana = {character.Mana}, Gold = {character.Gold} WHERE Name = '{character.Name}'";
 
                 using(NpgsqlCommand cmd = new NpgsqlCommand(sqlQuery, conn))
                 {

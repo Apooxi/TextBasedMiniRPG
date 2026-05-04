@@ -11,7 +11,8 @@ CREATE TABLE Characters (
     Mana INT NOT NULL,
     Wins INT DEFAULT 0,
     Level INT DEFAULT 1,
-    XP INT DEFAULT 0
+    XP INT DEFAULT 0,
+    Gold INT DEFAULT 0
 );
 
 -- Örnek karakterlerimizi ekliyoruz.
